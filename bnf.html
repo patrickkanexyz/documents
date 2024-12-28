@@ -1,0 +1,831 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+  <TITLE>BNF and EBNF: What are they and how do they work?</TITLE>
+  <META NAME="Author"      CONTENT="Lars Marius Garshol">
+  <META NAME="Generator"   CONTENT="Homemade">
+  <META NAME="Description" CONTENT="An introduction to BNF and EBNF, two ways of formally
+      defining languages.">
+  <META NAME="Keywords"    CONTENT="BNF, EBNF, grammar, languages, formal languages, syntax,
+      parsing, LALR parsing, LR parsing, LL parsing">
+  <LINK REL=stylesheet HREF="/visuals/standard.css" TYPE="text/css" MEDIA=screen>
+</HEAD>
+
+<BODY>
+
+<H1>BNF and EBNF: What are they and how do they work?</H1>
+
+<P
+class="author"
+><A
+HREF="/"
+>By: Lars Marius Garshol
+  </A
+></P
+><H2
+>Contents</H2
+><ul
+><li
+><A
+HREF="#id1."
+>Introduction</A
+><ul
+><li
+><A
+HREF="#id1.1."
+>What is this?</A
+><ul
+></ul
+></li
+><li
+><A
+HREF="#id1.2."
+>What is BNF?</A
+><ul
+></ul
+></li
+></ul
+></li
+><li
+><A
+HREF="#id2."
+>How it works</A
+><ul
+><li
+><A
+HREF="#id2.1."
+>The principles</A
+><ul
+></ul
+></li
+><li
+><A
+HREF="#id2.2."
+>A real example</A
+><ul
+></ul
+></li
+><li
+><A
+HREF="#id2.3."
+>EBNF: What is it, and why do we need it?</A
+><ul
+></ul
+></li
+><li
+><A
+HREF="#id2.4."
+>An EBNF sample grammar</A
+><ul
+></ul
+></li
+></ul
+></li
+><li
+><A
+HREF="#id3."
+>Uses of BNF and EBNF</A
+><ul
+><li
+><A
+HREF="#id3.1."
+>Common uses</A
+><ul
+></ul
+></li
+><li
+><A
+HREF="#id3.2."
+>How to use a formal grammar</A
+><ul
+></ul
+></li
+></ul
+></li
+><li
+><A
+HREF="#id4."
+>Parsing</A
+><ul
+><li
+><A
+HREF="#id4.1."
+>The easiest way</A
+><ul
+><li
+><A
+HREF="#id4.1.1."
+>Top-down parsing (LL)</A
+><ul
+></ul
+></li
+><li
+><A
+HREF="#id4.1.2."
+>An LL analysis example</A
+><ul
+></ul
+></li
+><li
+><A
+HREF="#id4.1.3."
+>An LL transformation example</A
+><ul
+></ul
+></li
+></ul
+></li
+><li
+><A
+HREF="#id4.2."
+>The slightly harder way</A
+><ul
+><li
+><A
+HREF="#id4.2.1."
+>Bottom-up parsing (LR)</A
+><ul
+></ul
+></li
+></ul
+></li
+><li
+><A
+HREF="#id4.3."
+>LL or LR?</A
+><ul
+></ul
+></li
+><li
+><A
+HREF="#id4.4."
+>More information</A
+><ul
+></ul
+></li
+></ul
+></li
+><li
+><A
+HREF="#id5."
+>Appendices</A
+><ul
+><li
+><A
+HREF="#id5.1."
+>Acknowledgements</A
+><ul
+></ul
+></li
+></ul
+></li
+></ul
+><H2
+><A
+NAME="id1."
+>Introduction</A
+></H2
+><H3
+><A
+NAME="id1.1."
+>What is this?</A
+></H3
+><P
+>This is a short article that attempts to explain what BNF is, based on
+message
+<a href="http://groups.google.com/groups?hl=en&selm=wkwwagbizn.fsf%40ifi.uio.no">&#60;wkwwagbizn.fsf@ifi.uio.no&#62;</a>
+posted to comp.text.sgml on 16.Jun.98. Because of this it is a little
+rough, so if it leaves you with any unanswered questions, email me and
+I'll try to explain as best I can.&#13;</P
+><P
+>It has been filled out substantially since then and has grown quite
+large. However, you needn't fear. The article gets more and more
+detailed as you read on, so if you don't want to dig really deep into
+this, just stop reading when the questions you are interested in have
+been answered and things start getting boring.</P
+><H3
+><A
+NAME="id1.2."
+>What is BNF?</A
+></H3
+><P
+>Backus-Naur notation (more commonly known as BNF or Backus-Naur Form)
+is a formal mathematical way to describe a language, which was
+developed by John Backus (and possibly Peter Naur as well) to describe
+the syntax of the Algol 60 programming language. &#13;</P
+><P
+>(Legend has it that it was primarily developed by John Backus (based
+on earlier work by the mathematician Emil Post), but adopted and
+slightly improved by Peter Naur for Algol 60, which made it
+well-known.  Because of this Naur calls BNF Backus Normal Form, while
+everyone else calls it Backus-Naur Form.)&#13;</P
+><P
+>It is used to formally define the grammar of a language, so that there
+is no disagreement or ambiguity as to what is allowed and what is
+not. In fact, BNF is so unambiguous that there is a lot of
+mathematical theory around these kinds of grammars, and one can
+actually mechanically construct a parser for a language given a BNF
+grammar for it. (There are some kinds of grammars for which this isn't
+possible, but they can usually be transformed manually into ones that
+can be used.)&#13;</P
+><P
+>Programs that do this are commonly called "compiler compilers". The
+most famous of these is YACC, but there are many more.</P
+><H2
+><A
+NAME="id2."
+>How it works</A
+></H2
+><H3
+><A
+NAME="id2.1."
+>The principles</A
+></H3
+><P
+>BNF is sort of like a mathematical game: you start with a symbol
+(called the start symbol and by convention usually named S in
+examples) and are then given rules for what you can replace this
+symbol with. The language defined by the BNF grammar is just the set
+of all strings you can produce by following these rules.&#13;</P
+><P
+>The rules are called production rules, and look like this:
+<pre
+><code
+>  symbol := alternative1 | alternative2 ...</code
+></pre
+>&#13;</P
+><P
+>A production rule simply states that the symbol on the left-hand side
+of the := must be replaced by one of the alternatives on the right
+hand side. The alternatives are separated by |s. (One variation on
+this is to use ::= instead of :=, but the meaning is the same.)
+Alternatives usually consist of both symbols and something called
+terminals. Terminals are simply pieces of the final string that are
+not symbols. They are called terminals because there are no production
+rules for them: they terminate the production process. (Symbols are
+often called non-terminals.)&#13;</P
+><P
+>Another variation on BNF grammars is to enclose terminals in quotes to
+distinguish them from symbols. Some BNF grammars explicitly show where
+whitespace is allowed by having a symbol for it, while other grammars
+leave this for the reader to infer.&#13;</P
+><P
+>There is one special symbol in BNF: @, which simply means that
+the symbol can be removed. If you replace a symbol by @, you do
+it by just removing the symbol. This is useful because in some cases
+it is difficult to end the replacement process without using this
+trick.&#13;</P
+><P
+>So, the language described by a grammar is the set of all strings you
+can produce with the production rules. If a string cannot in any way
+be produced by using the rules the string is not allowed in the
+language.</P
+><H3
+><A
+NAME="id2.2."
+>A real example</A
+></H3
+><P
+>Below is a sample BNF grammar:
+<pre
+><code
+>  S  := '-' FN |
+        FN
+  FN := DL |
+        DL '.' DL
+  DL := D |
+        D DL
+  D  := '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'</code
+></pre
+>&#13;</P
+><P
+>The different symbols here are all abbreviations: S is the start
+symbol, FN produces a fractional number, DL is a digit list, while D
+is a digit.&#13;</P
+><P
+>Valid sentences in the language described by this grammar are all
+numbers, possibly fractional, and possibly negative. To produce a
+number, start with the start symbol S:&#13;</P
+><pre
+>  S</pre
+><P
+>Then replace the S symbol with one of its productions. In this case we
+choose not to put a '-' in front of the number, so we use the plain FN
+production and replace S by FN:&#13;</P
+><pre
+>  FN</pre
+><P
+>The next step is then to replace the FN symbol with one of its
+productions.  We want a fractional number, so we choose the production
+that creates two decimal lists with a '.' between them, and after that
+we keep choosing replacing a symbol with one of its productions once
+per line in the example below:&#13;</P
+><pre
+>  DL . DL
+
+  D . DL
+
+  3 . DL
+
+  3 . D DL
+
+  3 . D D
+
+  3 . 1 D
+
+  3 . 1 4</pre
+><P
+>Here we've produced the fractional number 3.14. How to produce the
+number -5 is left as an exercise for the reader. To make sure you
+understand this you should also study the grammar until you understand
+why the string 3..14 cannot be produced with these production rules.&#13;</P
+><H3
+><A
+NAME="id2.3."
+>EBNF: What is it, and why do we need it?</A
+></H3
+><P
+>In DL I had to use recursion (ie: DL can produce new DLs) to express
+the fact that there can be any number of Ds. This is a bit awkward and
+makes the BNF harder to read.  Extended BNF (EBNF, of course) solves
+this problem by adding three operators:&#13;</P
+><UL
+><LI
+>? : which means that the symbol (or group of symbols in parenthesis)
+          to the left of the operator is optional (it can appear zero or
+          one times)
+  </LI
+><LI
+>* : which means that something can be repeated any number of times
+          (and possibly be skipped altogether)
+  </LI
+><LI
+>+ : which means that something can appear one or more times</LI
+></UL
+><H3
+><A
+NAME="id2.4."
+>An EBNF sample grammar</A
+></H3
+><P
+>So in extended BNF the above grammar can be written as:
+<pre
+><code
+>  S := '-'? D+ ('.' D+)?
+
+  D := '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'</code
+></pre
+>
+  &#13;</P
+><P
+>which is rather nicer. :)&#13;</P
+><P
+>Just for the record: EBNF is not more powerful than BNF in terms of
+what languages it can define, just more convenient. Any EBNF
+production can be translated into an equivalent set of BNF
+productions.</P
+><H2
+><A
+NAME="id3."
+>Uses of BNF and EBNF</A
+></H2
+><H3
+><A
+NAME="id3.1."
+>Common uses</A
+></H3
+><P
+>Most programming language standards use some variant of EBNF to define
+the grammar of the language. This has two advantages: there can be no
+disagreement on what the syntax of the language is, and it makes it
+much easier to make compilers, because the parser for the compiler can
+be generated automatically with a compiler-compiler like YACC.&#13;</P
+><P
+>EBNF is also used in many other standards, such as definitions of
+protocol formats, data formats and markup languages such as XML and
+SGML. (HTML is not defined with a grammar, instead it is defined with
+an SGML DTD, which is sort of a higher-level grammar.)&#13;</P
+><P
+>You can see a collection of BNF grammars at the <A
+HREF="http://cui.unige.ch/isi/bnf/BNFweb.html"
+>BNF web club</A
+>
+. </P
+><H3
+><A
+NAME="id3.2."
+>How to use a formal grammar</A
+></H3
+><P
+>OK. Now you know what BNF and EBNF are, what they are used for, but
+perhaps not why they are useful or how you can take advantage of them.&#13;</P
+><P
+>The most obvious way of using a formal grammar has already been
+mentioned in passing: once you've given a formal grammar for your
+language you have completely defined it. There can be no further
+disagreement on what is allowed in the language and what is not.  This
+is extremely useful because a syntax description in ordinary prose is
+much more verbose and open to different interpretations.</P
+><P
+>Another benefit is this: formal grammars are mathematical creatures
+and can be "understood" by computers. There are actually lots of
+programs that can be given (E)BNF grammars as input and automatically
+produce code for parsers for the given grammar. In fact, this is the
+most common way to produce a compiler: by using a so-called
+compiler-compiler that takes a grammar as input and produces parser
+code in some programming language.&#13;</P
+><P
+>Of course, compilers do much more checking than just grammar checking
+(such as type checking) and they also produce code. None of these
+things are described in an (E)BNF grammar, so compiler-compilers
+usually have a special syntax for associating code snippets (called
+actions) with the different productions in the grammar.&#13;</P
+><P
+>The best-known compiler-compiler is YACC (Yet Another Compiler
+Compiler), which produces C code, but others exist for C++, Java,
+Python as well as many other languages.</P
+><H2
+><A
+NAME="id4."
+>Parsing</A
+></H2
+><H3
+><A
+NAME="id4.1."
+>The easiest way</A
+></H3
+><H4
+><A
+NAME="id4.1.1."
+>Top-down parsing (LL)</A
+></H4
+><P
+>The easiest way of parsing something according to a grammar in use
+today is called LL parsing (or top-down parsing). It works like this:
+for each production find out which terminals the production can
+start with. (This is called the start set.)</P
+><P
+>Then, when parsing, you just start with the start symbol and compare
+the start sets of the different productions against the first piece of
+input to see which of the productions have been used. Of course, this
+can only be done if no two start sets for one symbol both contain the
+same terminal. If they do there is no way to determine which
+production to choose by looking at the first terminal on the input.&#13;</P
+><P
+>LL grammars are often classified by numbers, such as LL(1), LL(0) and
+so on. The number in the parenthesis tells you the maximum number of
+terminals you may have to look at at a time to choose the right
+production at any point in the grammar. So for LL(0) you don't have to
+look at any terminals at all, you can always choose the right
+production. This is only possible if all symbols have only one
+production, and if they only have one production the language can only
+have one string. In other words: LL(0) grammars are not interesting.&#13;</P
+><P
+>The most common (and useful) kind of LL grammar is LL(1) where you can
+always choose the right production by looking at only the first
+terminal on the input at any given time. With LL(2) you have to look
+at two symbols, and so on. There exist grammars that are not LL(k)
+grammars for any fixed value of k at all, and they are sadly quite
+common.</P
+><H4
+><A
+NAME="id4.1.2."
+>An LL analysis example</A
+></H4
+><P
+>As a demonstration, let's do a start set analysis of the sample
+grammar above. For the symbol D this is easy: all productions have a
+single digit as their start set (the one they produce) and the D
+symbol has the set of all ten digits as its start set. This means that
+we have at best an LL(1) grammar, since in this case we need to look
+at one terminal to choose the right production.&#13;</P
+><P
+>With DL we run into trouble. Both productions start with D and thus
+both have the same start set. This means that one cannot see which
+production to choose by looking at just the first terminal of the
+input. However, we can easily get round this problem by cheating: if
+the second terminal on input is <EM
+>not</EM
+> a digit we must have used
+the first production, but if they both are digits we must have used
+the second one. In other words, this means that this is at best an
+LL(2) grammar.&#13;</P
+><P
+>I actually simplified things a little here. The productions for DL
+alone don't tells us which terminals are allowed after the first
+terminal in the D @ production, because we need to know which
+terminals are allowed after a DL symbol. This set of terminals is
+called the follow set of the symbol, and in this case it is '.' and
+the end of input. &#13;</P
+><P
+>The FN symbol turns out to be even worse, since both productions have
+all digits as their start set. Looking at the second terminal doesn't
+help since we need to look at the first terminal after the last digit
+in the digit list (DL) and we don't know how many digits there are
+until we've read them all. And since there is no limit on the number
+of digits there can be, this isn't an LL(k) grammar for any value of k
+at all (there can always be more digits than k, no matter which value
+of k value you choose).&#13;</P
+><P
+>Somewhat surprisingly perhaps, the S symbol is easy. The first
+production has '-' as its start set, the second one has all digits. In
+other words, when you start parsing you'll start with the S symbol and
+look at the input to decide which production was used. If the first
+terminal is '-' you know that the first production was used. If not,
+the second one was used. It's only the FN and DL productions that
+cause problems.</P
+><H4
+><A
+NAME="id4.1.3."
+>An LL transformation example</A
+></H4
+><P
+>However, there is no need to despair. Most grammars that are not LL(k)
+can fairly easily be converted to LL(1) grammars. In this case we'll
+need to change two symbols: FN and DL.&#13;</P
+><P
+>The problem with FN is that both productions begin with DL, but the
+second one continues with a '.' and another DL after the initial DL.
+This is easily solved: we change FN to have just one production that
+starts with DL followed by FP (fractional part), where FP can be
+nothing or '.' followed by a DL, like this:</P
+><pre
+>  FN := DL FP
+  FP := @ | '.' DL</pre
+><P
+>Now there are no problems with FN anymore, since there's just one
+production, and FP is unproblematic because the two productions have
+different start sets. End of input and '.', respectively.</P
+><P
+>The DL is a tougher nut to crack, since the problem is the recursion
+and it's compounded by the fact that we need at least one D to result from
+the DL. The solution is to give DL a single production, a D followed by DR
+(digits rest). DR then has two productions: D DR (more digits) or @ (no more
+digits). The first production has a start set of all digits, while the
+second has '.' and end of input as its start set, so this solves the problem.</P
+><P
+>This is the complete LL(1) grammar as we've now transformed it:</P
+><pre
+>  S  := '-' FN | FN
+  FN := DL FP
+  FP := @ | '.' DL
+  DL := D DR
+  DR := D DR | @
+  D  := '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'</pre
+><H3
+><A
+NAME="id4.2."
+>The slightly harder way</A
+></H3
+><H4
+><A
+NAME="id4.2.1."
+>Bottom-up parsing (LR)</A
+></H4
+><P
+>A harder way to parse is the one known as shift-reduce or bottom-up
+parsing. This technique collects input until it finds that it can
+reduce an input sequence with a symbol. This may sound difficult, so
+I'll give an example to clarify. We'll parse the string '3.14' and see
+how it was produced from the grammar. We start by reading 3 from the
+input:</P
+><pre
+>  3</pre
+><P
+>and then we look to see if we can reduce it to the symbol it was
+produced from. And indeed we can, it was produced from the D symbol,
+which we replace the 3 with. Then we note that we can produce the D
+from DL and replace the D with DL. (The grammar is ambiguous, which
+means that we can reduce further to FN, which would be wrong. For
+simplicity we just skip the wrong steps here, but an unambiguous
+grammar would not allow these wrong choices.) After that we read the
+. from the input and try to reduce it, but fail:</P
+><pre
+>  D
+
+  DL
+
+  DL .</pre
+><P
+>This can't be reduced to anything, so we read the next character from
+the input: 1. We then reduce that to a D and read the next character,
+which is 4. 4 can be reduced to D, then to DL, and then the "D DL"
+sequence can be further reduced to a DL.</P
+><pre
+>  DL .
+
+  DL . 1
+
+  DL . D
+
+  DL . D 4
+
+  DL . D D
+  
+  DL . D DL
+  
+  DL . DL</pre
+><P
+>Looking at the grammar we quickly note that FN can produce just this
+"DL . DL" sequence and do a reduction. We then note that FN can be
+produced from S and reduce the FN to S and then stop, as we've
+completed the parse.</P
+><pre
+>  DL . DL
+
+  FN
+
+  S</pre
+><P
+>As you may have noted we could often choose whether to do a reduction
+now or wait until we had more symbols and then do a different
+reduction. There are more complex variations on this shift-reduce
+parsing algorithm, in increasing complexity and power: LR(0), SLR,
+LALR and LR(1). LR(1) usually needs unpractically large parse tables,
+so LALR is the most commonly used algorithm, since SLR and LR(0) are
+not powerful enough for most programming languages.</P
+><P
+>LALR and LR(1) are too complex for me to cover here, but you get the
+basic idea.</P
+><H3
+><A
+NAME="id4.3."
+>LL or LR?</A
+></H3
+><P
+>This question has already been answered much better by someone else,
+so I'm just quoting his news message in full here:</P
+><BLOCKQUOTE
+><PRE
+>I hope this doesn't start a war...
+
+First - - Frank, if you see this, don't shoot me.  (My boss is Frank
+DeRemer, the creator of LALR parsing...)
+
+(I borrowed this summary from Fischer&#38;LeBlanc's "Crafting a Compiler")
+
+  Simplicity    - - LL
+  Generality    - - LALR
+  Actions       - - LL
+  Error repair  - - LL
+  Table sizes   - - LL
+  Parsing speed - - comparable (me: and tool-dependent)
+
+Simplicity - - LL wins
+==========
+The workings of an LL parser are much simpler.  And, if you have to
+debug a parser, looking at a recursive-descent parser (a common way to
+program an LL parser) is much simpler than the tables of a LALR parser.
+
+Generality - - LALR wins
+==========
+For ease of specification, LALR wins hands down.  The big
+difference here between LL and (LA)LR is that in an LL grammar you must
+left-factor rules and remove left recursion.
+
+Left factoring is necessary because LL parsing requires selecting an
+alternative based on a fixed number of input tokens.
+
+Left recursion is problematic because a lookahead token of a rule is
+always in the lookahead token on that same rule.  (Everything in set A
+is in set A...)  This causes the rule to recurse forever and ever and
+ever and ever...
+
+To see ways to convert LALR grammars to LL grammars, take a look at my
+page on it:
+  http://www.jguru.com/thetick/articles/lalrtoll.html
+
+Many languages already have LALR grammars available, so you'd have to
+translate.  If the language _doesn't_ have a grammar available, then I'd
+say it's not really any harder to write a LL grammar from scratch.  (You
+just have to be in the right "LL" mindset, which usually involves
+watching 8 hours of Dr. Who before writing the grammar...  I actually
+prefer LL if you didn't know...)
+
+
+Actions - - LL wins
+=======
+In an LL parser you can place actions anywhere you want without
+introducing a conflict
+
+Error repair - - LL wins
+============
+LL parsers have much better context information (they are top-down
+parsers) and therefore can help much more in repairing an error, not to
+mention reporting errors.
+
+Table sizes - - LL
+===========
+Assuming you write a table-driven LL parser, its tables are nearly half
+the size.  (To be fair, there are ways to optimize LALR tables to make
+them smaller, so I think this one washes...)
+
+Parsing speed - comparable (me: and tool-dependent)</PRE
+><p
+CLASS="origin"
+>--Scott Stanchfield in article
+<a href="http://groups.google.com/groups?hl=en&selm=33C1BDB9.FC6D86D3%40scruz.net">&#60;33C1BDB9.FC6D86D3@scruz.net&#62;</a> on
+        comp.lang.java.softwaretools Mon, 07 Jul 1997.</p
+></BLOCKQUOTE
+><H3
+><A
+NAME="id4.4."
+>More information</A
+></H3
+>
+
+<p>John Aycock has developed an unusually nice and simple to use
+parsing framework in Python called
+<a href="http://pages.cpsc.ucalgary.ca/~aycock/spark/">SPARK</a>,
+which is described in his
+<a
+href="http://www.foretec.com/python/workshops/1998-11/proceedings/papers/aycock-little/aycock-little.html">very
+readable paper</a>.</p>
+
+<P
+>The definitive work on parsing and compilers is 'The Dragon Book', or
+<A HREF="http://www.amazon.com/exec/obidos/ASIN/0201100886"
+>Compilers :
+Principles, Techniques, and Tools</A
+>, by Aho, Sethi and Ullman.
+Beware, though, that this is a rather advanced and mathematical book.</P
+><P
+>A free online alternative, which looks rather good, is <A
+HREF="http://www.cs.vu.nl/~dick/PTAPG.html"
+>this book</A
+>, but I
+can't comment on the quality, since I haven't read it yet.</P
+><P
+>Henry Baker has written <A
+HREF="http://home.pipeline.com/~hbaker1/Prag-Parse.html"
+>an article
+about parsing in Common Lisp</A
+>, which presents a simple,
+high-performant and very convenient framework for parsing. The
+approach is similar to that of compiler-compilers, but instead relies
+on the very powerful macro system of Common Lisp. </P
+>
+
+<p>
+One syntax for specifying BNF grammars can be found in
+<A HREF="http://www.ietf.org/rfc/rfc2234.txt">RFC 2234</A>.  Another
+can be found in <A
+HREF="http://www.cl.cam.ac.uk/~mgk25/iso-ebnf.html">the ISO 14977
+standard</A>.
+</p>
+
+<H2
+><A
+NAME="id5."
+>Appendices</A
+></H2
+><H3
+><A
+NAME="id5.1."
+>Acknowledgements</A
+></H3
+><P
+>Thanks to:</P
+><UL
+><LI
+><A
+HREF="http://cpcug.org/user/jelks/"
+>Jelks Cabaniss</A
+>, for
+      encouraging me to turn the news article into a web article, and for
+      providing very useful criticism of the article once it appeared in
+      web form.
+  </LI
+><LI
+>C. M. Sperberg-McQueen for extra historical information about
+      the name of BNF.
+
+  </LI
+><LI
+><A
+HREF="http://www.jguru.com/thetick/"
+>Scott
+  Stanchfield</A
+> for
+      writing the great comparison
+      of LALR and LL. I have asked for permission to quote this, but have
+      received no reply, unfortunately.
+
+  </LI
+><LI
+>James Huddleston for correcting me on John Backus' name.</LI
+>
+<li><a href="http://www.dpawson.co.uk/">Dave Pawson</a> for correcting
+a bad link.</UL
+>
+
+<HR>
+
+<ADDRESS>
+Last update 2008-08-22, by Lars M. Garshol.
+</ADDRESS>
+
+</DIV>
+
+</BODY>
+</HTML>

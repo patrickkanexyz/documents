@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tmux Scripting | Peter Debelak</title>
+    <meta name="description" content="It can sometimes be fun and useful to write tmux scripts that get everything you need running at once. Peter gives you some tips on how to write scripts for tmux.">
+    <meta property="og:url" content="https://www.peterdebelak.com/blog/tmux-scripting/" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="Tmux Scripting" />
+    <meta property="og:description" content="It can sometimes be fun and useful to write tmux scripts that get everything you need running at once. Peter gives you some tips on how to write scripts for tmux." />
+    <meta property="og:image" content="https://www.peterdebelak.com/images/peters-face.jpeg" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:site" content="@peter_debelak" />
+    <meta name="twitter:title" content="Tmux Scripting" />
+    <meta name="twitter:description" content="It can sometimes be fun and useful to write tmux scripts that get everything you need running at once. Peter gives you some tips on how to write scripts for tmux." />
+    <meta name="twitter:image" content="https://www.peterdebelak.com/images/peters-face.jpeg" />
+    <link type="application/atom+xml" rel="alternate" href="https://www.peterdebelak.com/feed.xml" title="Peter Debelak" />
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <link rel="stylesheet" href="/css/main.css" type="text/css">
+    <link rel="shortcut icon" href="/images/favicon.ico" type="image/x-icon">
+  </head>
+  <body >
+    <div itemscope itemtype="http://schema.org/Blog">
+  <meta itemprop="name" content="Peter Debelak's Internet Weblog">
+  <meta itemprop="description" content="Posts about Ruby, Rails, and other technical topics from Peter Debelak">
+</div>
+
+    <section class="l-header">
+  <div class="header-wrapper">
+    <header>
+      <h1 class="header-title"><a href="/">Peter Debelak</a></h1>
+      <p class="header-subtitle">Thoughts about the internet, on the internet</p>
+    </header>
+    <nav class="header-nav">
+      <ul>
+        <li class="is-active dropdown">
+          <a href="/">Blog</a>
+        </li>
+        <li class="">
+          <a href="/about/">About</a>
+        </li>
+        <li class="">
+          <a href="/resume/">Resume</a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</section>
+
+    <main class="l-main">
+      <section class="l-content row">
+        <article itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    <h1 class="blog-title" itemprop="mainEntityOfPage"><span itemprop="headline">Tmux Scripting</span></h1>
+    <p class="blog-date">Last updated 16 April 2016</p>
+  </header>
+  <link href="/blog/tmux-scripting/" itemprop="url">
+  <time itemprop="dateModified" datetime="2016-04-16 00:00:00 -0500"></time>
+  <time itemprop="datePublished" datetime="2016-04-16 00:00:00 -0500"></time>
+  <div itemprop="image" itemscope itemtype="http://schema.org/ImageObject" class="hidden">
+    <meta itemprop="url" content="https://www.peterdebelak.com/images/peters-face.jpeg">
+    <meta itemprop="width" content="80">
+    <meta itemprop="height" content="80">
+  </div>
+  <meta itemprop="author" itemtype="http://schema.org/Person" content="Peter Debelak">
+  <div itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+    <meta itemprop="name" content="Peter Debelak">
+    <div itemprop="logo" itemscope itemtype="http://schema.org/ImageObject" class="hidden">
+      <meta itemprop="url" content="https://www.peterdebelak.com/images/peters-face.jpeg">
+      <meta itemprop="width" content="80">
+      <meta itemprop="height" content="80">
+    </div>
+  </div>
+  <div class="blog-content" itemprop="articleBody">
+    <p>If you use <a href="https://tmux.github.io/">tmux</a> in your terminal you probably have a default set-up you use. For example, I always have the same windows open with the same names split up in the same way at <a href="https://reverb.com">work</a>, so I decided I might as well make a script to avoid all that manual work each time.</p>
+
+<p>The easiest way to do this is with a bash script. The basic trick is to start a tmux session detached and then send it signals. Here’s a very basic script to start a tmux session named <code class="language-plaintext highlighter-rouge">vim</code> with vim running in it and then attach:</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c">#!/bin/bash</span>
+
+tmux new <span class="nt">-s</span> vim <span class="nt">-d</span>
+tmux send-keys <span class="nt">-t</span> vim <span class="s1">'vim'</span> C-m
+tmux attach <span class="nt">-t</span> vim</code></pre></figure>
+
+<p>The first line of this script (after the shebang bash line) says to make a new tmux session named <code class="language-plaintext highlighter-rouge">vim</code> but don’t attach to it. The second line sends the text <code class="language-plaintext highlighter-rouge">vim</code> to the target session <code class="language-plaintext highlighter-rouge">vim</code> then hits enter (represented by <code class="language-plaintext highlighter-rouge">C-m</code>). That will cause vim to start in the opened tmux session. Finally, we attach to the session <code class="language-plaintext highlighter-rouge">vim</code>. Simple, right?</p>
+
+<p>Let’s see an example with more windows and splits:</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c">#!/bin/bash</span>
+
+tmux new <span class="nt">-s</span> work <span class="nt">-d</span>
+tmux rename-window <span class="nt">-t</span> work vim
+tmux send-keys <span class="nt">-t</span> work <span class="s1">'vim'</span> C-m
+
+tmux new-window <span class="nt">-t</span> work
+tmux rename-window <span class="nt">-t</span> work server
+tmux send-keys <span class="nt">-t</span> work <span class="s1">'./bin/rails s'</span> C-m
+tmux split-window <span class="nt">-v</span> <span class="nt">-t</span> work
+tmux send-keys <span class="nt">-t</span> work <span class="s1">'./bin/sidekiq'</span> C-m
+tmux <span class="k">select</span><span class="nt">-window</span> <span class="nt">-t</span> work:1
+tmux attach <span class="nt">-t</span> work</code></pre></figure>
+
+<p>This script is a little more complicated. First we start a new session called <code class="language-plaintext highlighter-rouge">work</code> and remain detached. Then we rename the window to <code class="language-plaintext highlighter-rouge">vim</code>. Then we start vim in that window. Next, we open a new window, rename it <code class="language-plaintext highlighter-rouge">server</code> and send the command <code class="language-plaintext highlighter-rouge">./bin/rails s</code> to it (this generally starts the web server in a rails project). Next, we split the window and send <code class="language-plaintext highlighter-rouge">./bin/sidekiq</code> to that split. Finally, we select window number 1 (I have my tmux windows start numbering at 1, but your might start at 0) and attach to the tmux session.</p>
+
+<p>Some things to know that might help you:</p>
+
+<ol>
+  <li>When you open a new window to split, your cursor is assumed to be in that pane for when you use <code class="language-plaintext highlighter-rouge">send-keys</code>. You generally want to send the keys to your current pane before splitting or opening a new window.</li>
+  <li>If you don’t like to have your windows split into even-size panes there are ways to specify the size, but I find they can have wildly different effects if you use the same script on computers with different size monitors. As a result, I don’t worry about resizing panes in the script.</li>
+  <li>You can put the name of your session in a variable (i.e. <code class="language-plaintext highlighter-rouge">SESSION=work; tmux new -s $SESSION -d</code>) so you can easily rename it in the future.</li>
+</ol>
+
+<p>I think you can see how these scripts are starting to get useful. I had a problem, though. At my job we run a lot of our development stuff in a <a href="https://www.vagrantup.com/">vagrant</a> vm. So I wanted to start vagrant, and then run several commands that depend on vagrant having successfully started. Vagrant takes a while to start, however, so I needed to find a way to wait for a single command to complete before proceeding. Luckily, tmux can help us here.</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c">#!/bin/bash</span>
+
+tmux new <span class="nt">-s</span> work <span class="nt">-d</span>
+tmux send-keys <span class="nt">-t</span> work <span class="s1">'vagrant up; tmux wait-for -S vagrant-up'</span> C-m<span class="se">\;</span> wait-for vagrant-up
+... other commands</code></pre></figure>
+
+<p>The second line of this script does exactly what we need. The way it works is this: <code class="language-plaintext highlighter-rouge">tmux send-keys</code> sends a command to tmux and doesn’t care what happens as a result. After the <code class="language-plaintext highlighter-rouge">send-keys</code> command, though, we say <code class="language-plaintext highlighter-rouge">wait-for vagrant-up</code>, which means the script will wait until a <code class="language-plaintext highlighter-rouge">wait-for</code> command with the arbitrary name <code class="language-plaintext highlighter-rouge">vagrant-up</code> is sent from the tmux session. The way you send this command is <code class="language-plaintext highlighter-rouge">tmux wait-for -S vagrant up</code>, so our tmux session is actually sending that back to us after the <code class="language-plaintext highlighter-rouge">vagrant up</code> command has completed. Since the <code class="language-plaintext highlighter-rouge">wait-for</code> command has been sent, the script can continue with other commands that can assume vagrant is running.</p>
+
+<p>I hope you have fun writing your own tmux scripts!</p>
+
+  </div>
+  <ul class="blog-tags">
+    <li>Tags:</li>
+    
+      <li><a href="/tag/shell/">Shell</a></li>
+    
+      <li><a href="/tag/tmux/">Tmux</a></li>
+    
+  </ul>
+</article>
+
+
+<nav>
+  <ul class="blog-pager">
+    
+      <li class="previous">
+        <a href="/blog/ready-set-vim-pt-2/">
+          &larr;
+          
+            Ready, Set, Vim! Part 2 - Movement
+          
+        </a>
+      </li>
+    
+    
+      <li class="next">
+        <a href="/blog/the-basics-n-plus-1-queries/">
+          
+            The Basics: N+1 Queries
+          
+          &rarr;
+        </a>
+      </li>
+    
+  </ul>
+</nav>
+
+
+        <footer class="l-footer">
+  <p class="center">
+    <a href="https://github.com/pdebelak">Peter on Github</a>
+    |
+    <a href="mailto:peter@peterdebelak.com">Contact Peter</a>
+  </p>
+</footer>
+
+      </section>
+    </main>
+  </body>
+</html>
